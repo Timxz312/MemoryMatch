@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Memory Match</title>
+<style>
+:root{--bg:#fdf3e7;--fg:#2d2118;--card:#e8743b;--face:#fffaf3;--accent:#e8743b;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1d1611;--fg:#f6ebe0;--card:#c85f2c;--face:#2e241c}}
+:root[data-theme="dark"]{--bg:#1d1611;--fg:#f6ebe0;--card:#c85f2c;--face:#2e241c}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,sans-serif;display:flex;flex-direction:column;align-items:center;gap:14px;padding:18px;min-height:100vh;box-sizing:border-box}
+h1{margin:0;font-size:1.6rem}
+.bar{display:flex;gap:22px;font-weight:700;align-items:center}
+button.n{background:var(--accent);color:#fff;border:0;border-radius:10px;padding:8px 16px;font-weight:800;font-size:.95rem;cursor:pointer}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;width:min(92vw,400px)}
+.card{aspect-ratio:1;perspective:600px;border:0;background:none;padding:0;cursor:pointer}
+.in{position:relative;width:100%;height:100%;transition:transform .35s;transform-style:preserve-3d}
+.card.up .in,.card.done .in{transform:rotateY(180deg)}
+.f,.b{position:absolute;inset:0;border-radius:12px;display:flex;align-items:center;justify-content:center;backface-visibility:hidden}
+.b{background:var(--card);font-size:1.6rem;color:#fff8}
+.f{background:var(--face);transform:rotateY(180deg);font-size:2.1rem;border:2px solid var(--card)}
+.card.done .f{opacity:.55}
+#win{display:none;font-weight:800;font-size:1.2rem;text-align:center}
+</style>
+</head>
+<body>
+<h1>🃏 Memory Match</h1>
+<div class="bar"><span>Moves <b id="mv">0</b></span><span>Time <b id="tm">0</b>s</span><span>Best <b id="bs">–</b></span><button class="n" id="nw">New game</button></div>
+<div class="grid" id="g"></div>
+<div id="win"></div>
+<script>
+const E=['🐶','🐱','🦊','🐼','🐸','🦁','🐙','🦄'],$=id=>document.getElementById(id);
+let open=[],moves=0,found=0,lock=false,t0=0,tick=null,best=null;
+try{best=+localStorage.getItem('memoryBest')||null}catch(e){}if(best)$('bs').textContent=best;
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a}
+function init(){
+clearInterval(tick);tick=null;open=[];moves=0;found=0;lock=false;$('mv').textContent=0;$('tm').textContent=0;$('win').style.display='none';
+const g=$('g');g.innerHTML='';
+shuffle([...E,...E]).forEach(e=>{const b=document.createElement('button');b.className='card';b.dataset.e=e;b.setAttribute('aria-label','card');
+b.innerHTML='<div class="in"><div class="b">?</div><div class="f">'+e+'</div></div>';b.onclick=()=>flip(b);g.appendChild(b)})}
+function flip(c){
+if(lock||c.classList.contains('up')||c.classList.contains('done'))return;
+if(!tick){t0=Date.now();tick=setInterval(()=>$('tm').textContent=Math.floor((Date.now()-t0)/1000),500)}
+c.classList.add('up');open.push(c);
+if(open.length===2){moves++;$('mv').textContent=moves;const[a,b]=open;
+if(a.dataset.e===b.dataset.e){[a,b].forEach(k=>{k.classList.remove('up');k.classList.add('done')});open=[];if(++found===E.length)win()}
+else{lock=true;setTimeout(()=>{a.classList.remove('up');b.classList.remove('up');open=[];lock=false},800)}}}
+function win(){clearInterval(tick);const s=Math.floor((Date.now()-t0)/1000);
+let m='🎉 Solved in '+moves+' moves and '+s+'s!';
+if(!best||moves<best){best=moves;$('bs').textContent=best;m+='<br>New best!';try{localStorage.setItem('memoryBest',best)}catch(e){}}
+$('win').innerHTML=m;$('win').style.display='block'}
+$('nw').onclick=init;init();
+</script>
+</body>
+</html>
